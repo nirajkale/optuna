@@ -404,9 +404,13 @@ class _CachedStorage(BaseStorage):
             if study_id not in self._studies:
                 self._studies[study_id] = _StudyInfo()
             study = self._studies[study_id]
-            trials = self._backend._get_trials(
-                study_id, states=None, excluded_trial_ids=study.owned_or_finished_trial_ids
-            )
+            #Niraj: re-load trails where the intermediate values are missing
+            trials_with_mising_values = [trial._trial_id for trial in study.trials.values() if not trial.intermediate_values]
+            excluded_trial_ids = set(study.owned_or_finished_trial_ids)
+            for trial_id in trials_with_mising_values:
+                excluded_trial_ids.remove(trial_id)
+            trials = self._backend._get_trials(study_id, states=None, excluded_trial_ids=excluded_trial_ids)
+            #Niraj: change-end
             if trials:
                 self._add_trials_to_cache(study_id, trials)
                 for trial in trials:
